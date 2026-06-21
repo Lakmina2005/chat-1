@@ -160,7 +160,7 @@ async function generateAndCheck(base, attempt = 1) {
   usernameStatus.className = "username-status checking show";
 
   try {
-    const snap = await getDoc(doc(db, "usernames", candidate));
+    const snap = await withRetry(() => getDoc(doc(db, "usernames", candidate)));
     if (myToken !== checkToken) return; // a newer click superseded this check
 
     if (snap.exists()) {
@@ -192,7 +192,7 @@ async function reserveUsername(base) {
   for (let i = 0; i < 6; i++) {
     const suffix = randomSuffix();
     const candidate = `${base}${suffix}`;
-    const snap = await getDoc(doc(db, "usernames", candidate));
+    const snap = await withRetry(() => getDoc(doc(db, "usernames", candidate)));
     if (!snap.exists()) return candidate;
   }
   throw new Error("username-exhausted");
@@ -228,6 +228,23 @@ function friendlyAuthError(err) {
   if (map[err.code]) return map[err.code];
   const reason = err.code || err.message || "unknown error";
   return `Something went wrong (${reason}). Please try again.`;
+}
+
+// Retries a Firestore call once (after a short pause) if it fails with a
+// transient "unavailable" error — covers brief network blips so the whole
+// signup doesn't fail over a single dropped packet.
+async function withRetry(fn, attempts = 3, delayMs = 1000) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (err.code !== "unavailable" || i === attempts - 1) throw err;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastErr;
 }
 
 /* ---------------------------------------------------------
@@ -286,7 +303,7 @@ registerForm.addEventListener("submit", async (e) => {
     let stillFree = false;
 
     if (username) {
-      const snap = await getDoc(doc(db, "usernames", username));
+      const snap = await withRetry(() => getDoc(doc(db, "usernames", username)));
       stillFree = !snap.exists();
     }
 
@@ -302,8 +319,8 @@ registerForm.addEventListener("submit", async (e) => {
     let photoURL = "";
     if (selectedPhotoFile) {
       const fileRef = ref(storage, `profile_pictures/${user.uid}`);
-      await uploadBytes(fileRef, selectedPhotoFile);
-      photoURL = await getDownloadURL(fileRef);
+      await withRetry(() => uploadBytes(fileRef, selectedPhotoFile));
+      photoURL = await withRetry(() => getDownloadURL(fileRef));
     }
 
     // 3. Update the Auth profile (so user.displayName / photoURL are set)
@@ -322,7 +339,7 @@ registerForm.addEventListener("submit", async (e) => {
     batch.set(doc(db, "usernames", username), {
       uid: user.uid
     });
-    await batch.commit();
+    await withRetry(() => batch.commit());
 
     showMsg(registerMsg, `Account created as @${username}! Redirecting…`, "success");
     window.location.href = "chat.html";
