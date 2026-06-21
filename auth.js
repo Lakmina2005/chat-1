@@ -180,7 +180,8 @@ async function generateAndCheck(base, attempt = 1) {
   } catch (err) {
     console.error("Username check failed:", err);
     if (myToken !== checkToken) return;
-    usernameStatus.textContent = "Couldn't check right now — check your Firestore setup (see console for details)";
+    const reason = err.code || err.message || "unknown error";
+    usernameStatus.textContent = `Couldn't check right now (${reason})`;
     usernameStatus.className = "username-status taken show";
     usernameIsAvailable = false;
   }
