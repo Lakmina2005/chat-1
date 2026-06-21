@@ -13,12 +13,15 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDVZ6Fe5V2CTs3qQF-mvSp7KWo0l_6Fngc",
+  authDomain: "studio-9137786164-3f664.firebaseapp.com",
+  projectId: "studio-9137786164-3f664",
+  // ⚠️ storageBucket eka oyage console snippet eke thibune naha —
+  // Storage feature eka mulinma enable karala naththan,
+  // Firebase eka eka generate karanne naha. Pahala note eka balanna.
+  storageBucket: "studio-9137786164-3f664.firebasestorage.app",
+  messagingSenderId: "1097269800864",
+  appId: "1:1097269800864:web:951c5d22f90e5b5d207ec5"
 };
 
 const app = initializeApp(firebaseConfig);
