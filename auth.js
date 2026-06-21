@@ -84,59 +84,116 @@ photoInput.addEventListener("change", () => {
 });
 
 /* ---------------------------------------------------------
-   Live username availability check (debounced)
+   Auto-generated username: base text + 4 random digits
+   e.g. typing "lakmina" suggests "lakmina4821"
 --------------------------------------------------------- */
 const usernameInput = document.getElementById("register-username");
 const usernameStatus = document.getElementById("username-status");
 const usernameError = document.getElementById("username-error");
-const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
+const usernamePreview = document.getElementById("username-preview");
+const usernamePreviewValue = document.getElementById("username-preview-value");
+const regenBtn = document.getElementById("regen-username-btn");
+
+const BASE_PATTERN = /^[a-z0-9_]{3,16}$/;
 
 let usernameCheckTimer = null;
+let checkToken = 0;          // guards against stale/out-of-order async checks
+let finalUsername = "";      // the generated username currently confirmed available
 let usernameIsAvailable = false;
 
+function sanitizeBase(raw) {
+  return raw.toLowerCase().replace(/[^a-z0-9_]/g, "");
+}
+
+function randomSuffix() {
+  return String(Math.floor(1000 + Math.random() * 9000)); // always 4 digits
+}
+
 usernameInput.addEventListener("input", () => {
-  usernameInput.value = usernameInput.value.toLowerCase().replace(/\s+/g, "");
-  usernameIsAvailable = false;
+  const base = sanitizeBase(usernameInput.value);
+  // keep the field itself clean (lowercase, no invalid chars) without forcing digits on it
+  if (usernameInput.value !== base) usernameInput.value = base;
+
   usernameError.classList.remove("show");
+  usernameIsAvailable = false;
+  finalUsername = "";
   clearTimeout(usernameCheckTimer);
 
-  const value = usernameInput.value.trim();
-
-  if (!value) {
+  if (!base) {
+    usernamePreview.classList.remove("show");
     usernameStatus.className = "username-status";
     return;
   }
 
-  if (!USERNAME_PATTERN.test(value)) {
+  if (!BASE_PATTERN.test(base)) {
+    usernamePreview.classList.remove("show");
     usernameStatus.className = "username-status";
-    usernameError.textContent = "3-20 characters: letters, numbers, underscores only.";
+    usernameError.textContent = "3-16 characters: letters, numbers, underscores only.";
     usernameError.classList.add("show");
     return;
   }
 
+  usernamePreview.classList.add("show");
+  usernamePreviewValue.textContent = `${base}····`;
+  usernameStatus.textContent = "Generating a unique number…";
+  usernameStatus.className = "username-status checking show";
+
+  usernameCheckTimer = setTimeout(() => generateAndCheck(base), 450);
+});
+
+regenBtn.addEventListener("click", () => {
+  const base = sanitizeBase(usernameInput.value);
+  if (!BASE_PATTERN.test(base)) return;
+  regenBtn.classList.add("spinning");
+  generateAndCheck(base).finally(() => regenBtn.classList.remove("spinning"));
+});
+
+// Tries a few random 4-digit suffixes until it finds one that's free.
+async function generateAndCheck(base, attempt = 1) {
+  const myToken = ++checkToken;
+  const suffix = randomSuffix();
+  const candidate = `${base}${suffix}`;
+
+  usernamePreviewValue.textContent = candidate;
   usernameStatus.textContent = "Checking availability…";
   usernameStatus.className = "username-status checking show";
 
-  usernameCheckTimer = setTimeout(() => checkUsernameAvailability(value), 450);
-});
-
-async function checkUsernameAvailability(username) {
   try {
-    const snap = await getDoc(doc(db, "usernames", username));
+    const snap = await getDoc(doc(db, "usernames", candidate));
+    if (myToken !== checkToken) return; // a newer keystroke/click superseded this check
+
     if (snap.exists()) {
-      usernameStatus.textContent = "✕ Username is taken";
+      if (attempt < 5) {
+        return generateAndCheck(base, attempt + 1);
+      }
+      usernameStatus.textContent = "Having trouble finding a free number — tap ⟳ to retry";
       usernameStatus.className = "username-status taken show";
       usernameIsAvailable = false;
-    } else {
-      usernameStatus.textContent = "✓ Username is available";
-      usernameStatus.className = "username-status ok show";
-      usernameIsAvailable = true;
+      return;
     }
+
+    usernameStatus.textContent = "✓ Available";
+    usernameStatus.className = "username-status ok show";
+    finalUsername = candidate;
+    usernameIsAvailable = true;
   } catch (err) {
-    usernameStatus.textContent = "Couldn't check right now";
+    console.error("Username check failed:", err);
+    if (myToken !== checkToken) return;
+    usernameStatus.textContent = "Couldn't check right now — check your Firestore setup (see console for details)";
     usernameStatus.className = "username-status taken show";
     usernameIsAvailable = false;
   }
+}
+
+// Used right before account creation: re-confirms (or finds a fresh) free username.
+async function reserveUsername(base) {
+  for (let i = 0; i < 6; i++) {
+    const suffix = randomSuffix();
+    const candidate = `${base}${suffix}`;
+    const snap = await getDoc(doc(db, "usernames", candidate));
+    if (!snap.exists()) return candidate;
+  }
+  throw new Error("username-exhausted");
 }
 
 /* ---------------------------------------------------------
@@ -207,25 +264,30 @@ registerForm.addEventListener("submit", async (e) => {
   clearMsg(registerMsg);
 
   const displayName = document.getElementById("register-name").value.trim();
-  const username = usernameInput.value.trim();
+  const base = sanitizeBase(usernameInput.value);
   const email = document.getElementById("register-email").value.trim();
   const password = document.getElementById("register-password").value;
 
-  if (!USERNAME_PATTERN.test(username)) {
-    showMsg(registerMsg, "Please choose a valid username first.", "error");
+  if (!BASE_PATTERN.test(base)) {
+    showMsg(registerMsg, "Please enter a valid username first.", "error");
     return;
   }
 
   setLoading(registerSubmit, true);
 
   try {
-    // Re-check username right before creating the account to reduce
-    // (but not fully eliminate) the chance of a race condition.
-    const usernameSnap = await getDoc(doc(db, "usernames", username));
-    if (usernameSnap.exists()) {
-      showMsg(registerMsg, "That username was just taken — please pick another.", "error");
-      setLoading(registerSubmit, false);
-      return;
+    // Prefer the suggestion already shown on screen; re-confirm it's still
+    // free, and only generate a fresh one if it was just taken.
+    let username = finalUsername;
+    let stillFree = false;
+
+    if (username) {
+      const snap = await getDoc(doc(db, "usernames", username));
+      stillFree = !snap.exists();
+    }
+
+    if (!stillFree) {
+      username = await reserveUsername(base);
     }
 
     // 1. Create the auth account (this also signs the user in)
@@ -258,10 +320,14 @@ registerForm.addEventListener("submit", async (e) => {
     });
     await batch.commit();
 
-    showMsg(registerMsg, "Account created! Redirecting…", "success");
+    showMsg(registerMsg, `Account created as @${username}! Redirecting…`, "success");
     window.location.href = "chat.html";
   } catch (err) {
-    showMsg(registerMsg, friendlyAuthError(err), "error");
+    if (err.message === "username-exhausted") {
+      showMsg(registerMsg, "Couldn't find a free username — please try a different base name.", "error");
+    } else {
+      showMsg(registerMsg, friendlyAuthError(err), "error");
+    }
   } finally {
     setLoading(registerSubmit, false);
   }

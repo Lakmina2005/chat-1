@@ -13,12 +13,12 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB7ZbhU6H_fGkZu4cWR4eyc8d0gakK7kdY",
-  authDomain: "mywhatsappchat-7cb60.firebaseapp.com",
-  projectId: "mywhatsappchat-7cb60",
-  storageBucket: "mywhatsappchat-7cb60.firebasestorage.app",
-  messagingSenderId: "479602961695",
-  appId: "1:479602961695:web:9e07a177da2235d9b2142a"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
