@@ -225,7 +225,9 @@ function friendlyAuthError(err) {
     "auth/invalid-credential": "Incorrect email or password.",
     "auth/too-many-requests": "Too many attempts. Please wait a moment and try again."
   };
-  return map[err.code] || "Something went wrong. Please try again.";
+  if (map[err.code]) return map[err.code];
+  const reason = err.code || err.message || "unknown error";
+  return `Something went wrong (${reason}). Please try again.`;
 }
 
 /* ---------------------------------------------------------
@@ -325,6 +327,7 @@ registerForm.addEventListener("submit", async (e) => {
     showMsg(registerMsg, `Account created as @${username}! Redirecting…`, "success");
     window.location.href = "chat.html";
   } catch (err) {
+    console.error("Registration failed:", err);
     if (err.message === "username-exhausted") {
       showMsg(registerMsg, "Couldn't find a free username — please try a different base name.", "error");
     } else {
