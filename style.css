@@ -1,0 +1,326 @@
+/* =========================================================
+   ChatApp — WhatsApp-dark-mode styled chat clone
+   style.css — shared theme + auth screens
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Core palette — matched to WhatsApp's dark theme */
+  --bg: #0b141a;
+  --bg-panel: #111b21;
+  --surface: #202c33;
+  --surface-hover: #2a3942;
+  --surface-input: #2a3942;
+  --accent: #00a884;
+  --accent-hover: #06cf9c;
+  --accent-bubble: #005c4b;
+  --border: #2a3942;
+  --text-primary: #e9edef;
+  --text-secondary: #8696a0;
+  --danger: #f15c6d;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-card: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+
+button { font-family: inherit; }
+
+::selection { background: var(--accent); color: #fff; }
+
+/* =========================================================
+   Auth screen layout
+   ========================================================= */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(0, 168, 132, 0.08), transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(0, 168, 132, 0.06), transparent 45%),
+    var(--bg);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 36px 32px 28px;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.auth-brand svg { width: 30px; height: 30px; }
+
+.auth-brand span {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.auth-tabs {
+  display: flex;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  margin-bottom: 24px;
+}
+
+.auth-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.auth-tab.active {
+  background: var(--accent);
+  color: #04201a;
+}
+
+.auth-form { display: none; flex-direction: column; gap: 16px; }
+.auth-form.active { display: flex; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.field label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.field-input-wrap { position: relative; display: flex; align-items: center; }
+
+.field input[type="text"],
+.field input[type="email"],
+.field input[type="password"] {
+  width: 100%;
+  background: var(--surface-input);
+  border: 1px solid transparent;
+  color: var(--text-primary);
+  font-size: 14.5px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.field input::placeholder { color: var(--text-secondary); opacity: 0.7; }
+
+.field input:focus {
+  border-color: var(--accent);
+}
+
+.field input.invalid { border-color: var(--danger); }
+
+.toggle-visibility {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  padding: 4px;
+}
+
+.toggle-visibility:hover { color: var(--text-primary); }
+
+.field-hint { font-size: 12px; color: var(--text-secondary); }
+.field-error { font-size: 12px; color: var(--danger); display: none; }
+.field-error.show { display: block; }
+
+.username-status {
+  font-size: 12px;
+  display: none;
+  align-items: center;
+  gap: 5px;
+}
+.username-status.show { display: flex; }
+.username-status.ok { color: var(--accent-hover); }
+.username-status.taken { color: var(--danger); }
+.username-status.checking { color: var(--text-secondary); }
+
+/* Profile picture uploader */
+.avatar-upload {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 2px;
+}
+
+.avatar-circle {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.avatar-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+.avatar-circle .avatar-placeholder { color: var(--text-secondary); }
+
+.avatar-circle .avatar-camera {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-panel);
+}
+
+.avatar-upload-text { display: flex; flex-direction: column; gap: 2px; }
+.avatar-upload-text strong { font-size: 13.5px; font-weight: 600; }
+.avatar-upload-text span { font-size: 12px; color: var(--text-secondary); }
+
+input[type="file"] { display: none; }
+
+.btn-primary {
+  width: 100%;
+  background: var(--accent);
+  color: #04201a;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 12px 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.btn-primary:hover { background: var(--accent-hover); }
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-primary .spinner { display: none; }
+.btn-primary.loading span.label { display: none; }
+.btn-primary.loading .spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(4, 32, 26, 0.35);
+  border-top-color: #04201a;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.auth-form-msg {
+  font-size: 13px;
+  text-align: center;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  display: none;
+}
+
+.auth-form-msg.show { display: block; }
+.auth-form-msg.error { background: rgba(241, 92, 109, 0.12); color: var(--danger); }
+.auth-form-msg.success { background: rgba(0, 168, 132, 0.12); color: var(--accent-hover); }
+
+.auth-footnote {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-top: 18px;
+}
+
+/* =========================================================
+   Minimal placeholder "logged in" screen (chat.html stub)
+   Step 2 will replace this with the full chat UI.
+   ========================================================= */
+
+.placeholder-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+  padding: 24px;
+}
+
+.placeholder-page .avatar-circle { width: 84px; height: 84px; cursor: default; }
+
+.placeholder-page h1 { font-size: 20px; margin: 0; }
+.placeholder-page p { color: var(--text-secondary); margin: 0; max-width: 320px; }
+
+.btn-secondary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.btn-secondary:hover { background: var(--surface-hover); }
+
+@media (max-width: 480px) {
+  .auth-card { padding: 28px 20px 22px; }
+}
