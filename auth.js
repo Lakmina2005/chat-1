@@ -92,11 +92,10 @@ const usernameStatus = document.getElementById("username-status");
 const usernameError = document.getElementById("username-error");
 const usernamePreview = document.getElementById("username-preview");
 const usernamePreviewValue = document.getElementById("username-preview-value");
-const regenBtn = document.getElementById("regen-username-btn");
+const generateBtn = document.getElementById("generate-username-btn");
 
 const BASE_PATTERN = /^[a-z0-9_]{3,16}$/;
 
-let usernameCheckTimer = null;
 let checkToken = 0;          // guards against stale/out-of-order async checks
 let finalUsername = "";      // the generated username currently confirmed available
 let usernameIsAvailable = false;
@@ -109,43 +108,44 @@ function randomSuffix() {
   return String(Math.floor(1000 + Math.random() * 9000)); // always 4 digits
 }
 
+// Typing only validates + resets — it does NOT call Firestore.
+// The user explicitly taps "Generate Username" to trigger a check.
 usernameInput.addEventListener("input", () => {
   const base = sanitizeBase(usernameInput.value);
-  // keep the field itself clean (lowercase, no invalid chars) without forcing digits on it
   if (usernameInput.value !== base) usernameInput.value = base;
 
   usernameError.classList.remove("show");
+  usernameStatus.className = "username-status";
+  usernamePreview.classList.remove("show");
   usernameIsAvailable = false;
   finalUsername = "";
-  clearTimeout(usernameCheckTimer);
 
-  if (!base) {
-    usernamePreview.classList.remove("show");
-    usernameStatus.className = "username-status";
-    return;
-  }
-
-  if (!BASE_PATTERN.test(base)) {
-    usernamePreview.classList.remove("show");
-    usernameStatus.className = "username-status";
+  if (base && !BASE_PATTERN.test(base)) {
     usernameError.textContent = "3-16 characters: letters, numbers, underscores only.";
+    usernameError.classList.add("show");
+  }
+});
+
+generateBtn.addEventListener("click", async () => {
+  const base = sanitizeBase(usernameInput.value);
+
+  usernameError.classList.remove("show");
+
+  if (!base || !BASE_PATTERN.test(base)) {
+    usernameError.textContent = "Enter 3-16 characters first: letters, numbers, underscores only.";
     usernameError.classList.add("show");
     return;
   }
 
-  usernamePreview.classList.add("show");
-  usernamePreviewValue.textContent = `${base}····`;
-  usernameStatus.textContent = "Generating a unique number…";
-  usernameStatus.className = "username-status checking show";
+  generateBtn.disabled = true;
+  generateBtn.classList.add("loading");
+  generateBtn.textContent = "Generating…";
 
-  usernameCheckTimer = setTimeout(() => generateAndCheck(base), 450);
-});
+  await generateAndCheck(base);
 
-regenBtn.addEventListener("click", () => {
-  const base = sanitizeBase(usernameInput.value);
-  if (!BASE_PATTERN.test(base)) return;
-  regenBtn.classList.add("spinning");
-  generateAndCheck(base).finally(() => regenBtn.classList.remove("spinning"));
+  generateBtn.disabled = false;
+  generateBtn.classList.remove("loading");
+  generateBtn.textContent = "Generate Another Number";
 });
 
 // Tries a few random 4-digit suffixes until it finds one that's free.
@@ -154,19 +154,20 @@ async function generateAndCheck(base, attempt = 1) {
   const suffix = randomSuffix();
   const candidate = `${base}${suffix}`;
 
+  usernamePreview.classList.add("show");
   usernamePreviewValue.textContent = candidate;
   usernameStatus.textContent = "Checking availability…";
   usernameStatus.className = "username-status checking show";
 
   try {
     const snap = await getDoc(doc(db, "usernames", candidate));
-    if (myToken !== checkToken) return; // a newer keystroke/click superseded this check
+    if (myToken !== checkToken) return; // a newer click superseded this check
 
     if (snap.exists()) {
       if (attempt < 5) {
         return generateAndCheck(base, attempt + 1);
       }
-      usernameStatus.textContent = "Having trouble finding a free number — tap ⟳ to retry";
+      usernameStatus.textContent = "Having trouble finding a free number — tap Generate again";
       usernameStatus.className = "username-status taken show";
       usernameIsAvailable = false;
       return;

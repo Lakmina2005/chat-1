@@ -76,13 +76,11 @@
         <div class="field-input-wrap">
           <input type="text" id="register-username" placeholder="e.g. lakmina" required />
         </div>
-        <div class="field-hint">We'll add 4 random numbers to the end to keep it unique — letters, numbers and underscores only.</div>
+        <div class="field-hint">Enter a name, then tap "Generate" — we'll add 4 random numbers to keep it unique.</div>
+        <button type="button" class="btn-generate" id="generate-username-btn">Generate Username</button>
         <div class="username-preview" id="username-preview">
           <span class="username-preview-label">Your username</span>
           <span class="username-preview-value" id="username-preview-value">—</span>
-          <button type="button" class="regen-btn" id="regen-username-btn" title="Get a different number" aria-label="Get a different number">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
-          </button>
         </div>
         <div id="username-status" class="username-status"></div>
         <div id="username-error" class="field-error"></div>
